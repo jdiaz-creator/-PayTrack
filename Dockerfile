@@ -33,6 +33,11 @@ RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoload
 
 COPY --from=frontend /app/public/build ./public/build
 
+# Fix Apache MPM conflict
+RUN a2dismod mpm_event mpm_worker || true
+RUN a2enmod mpm_prefork
+
+# Configure Apache for Laravel
 RUN a2enmod rewrite headers \
     && sed -ri 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf \
     && printf '<Directory /var/www/html/public>\nAllowOverride All\nRequire all granted\n</Directory>\n' >> /etc/apache2/apache2.conf \
