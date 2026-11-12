@@ -7,7 +7,6 @@ COPY . .
 RUN npm install && npm run build
 
 FROM php:8.2-apache
-
 RUN apt-get update && apt-get install -y \
     git unzip curl libzip-dev libpng-dev libjpeg62-turbo-dev libfreetype6-dev libicu-dev libonig-dev libssl-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
@@ -31,10 +30,14 @@ RUN set -eux; \
     printf '<Directory /var/www/html/public>\nAllowOverride All\nRequire all granted\n</Directory>\n' >> /etc/apache2/apache2.conf; \
     apache2ctl configtest
 
-RUN mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache storage/framework/cache/data storage/logs bootstrap/cache \
+# FIX 419: Tanggalin ang lumang cache na naka-commit
+RUN rm -f bootstrap/cache/config.php bootstrap/cache/routes-*.php bootstrap/cache/services.php \
+    && mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache storage/framework/cache/data storage/logs bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
 ENV PORT=10000
 EXPOSE 10000
-CMD ["sh", "-c", "sed -i \"s/Listen 80/Listen ${PORT:-10000}/\" /etc/apache2/ports.conf && sed -i \"s/:80>/:${PORT:-10000}>/\" /etc/apache2/sites-available/000-default.conf && exec apache2-foreground"]
+
+# FIX 419: Clear cache BAWAT START, bago mag Apache
+CMD ["sh", "-c", "sed -i \"s/Listen 80/Listen ${PORT:-10000}/\" /etc/apache2/ports.conf && sed -i \"s/:80>/:${PORT:-10000}>/\" /etc/apache2/sites-available/000-default.conf && rm -f bootstrap/cache/config.php && php artisan config:clear && php artisan cache:clear && php artisan view:clear && php artisan route:clear && exec apache2-foreground"]
