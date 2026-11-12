@@ -1,17 +1,11 @@
-
 # ==========================================
 # JOLERY PAYTRACK V2 - RENDER DEPLOYMENT
 # ==========================================
-
 # Build frontend assets
 FROM node:20-alpine AS frontend
-
 WORKDIR /app
-
 COPY . .
-
 RUN npm install && npm run build
-
 
 # PHP and Apache
 FROM php:8.2-apache
@@ -28,15 +22,15 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install \
-        pdo_mysql \
-        mbstring \
-        exif \
-        pcntl \
-        bcmath \
-        gd \
-        zip \
-        intl \
-        opcache \
+    pdo_mysql \
+    mbstring \
+    exif \
+    pcntl \
+    bcmath \
+    gd \
+    zip \
+    intl \
+    opcache \
     && pecl install mongodb \
     && docker-php-ext-enable mongodb \
     && apt-get clean \
@@ -44,7 +38,6 @@ RUN apt-get update && apt-get install -y \
 
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
-
 WORKDIR /var/www/html
 
 # Copy Laravel project
@@ -69,16 +62,25 @@ RUN set -eux; \
 # Configure Apache for Laravel public directory
 RUN set -eux; \
     sed -ri 's!/var/www/html!/var/www/html/public!g' \
-        /etc/apache2/sites-available/000-default.conf; \
+    /etc/apache2/sites-available/000-default.conf; \
     printf '<Directory /var/www/html/public>\nAllowOverride All\nRequire all granted\n</Directory>\n' \
-        >> /etc/apache2/apache2.conf; \
-    chown -R www-data:www-data storage bootstrap/cache; \
-    chmod -R 775 storage bootstrap/cache; \
+    >> /etc/apache2/apache2.conf; \
     apache2ctl configtest
+
+# *** ITO YUNG FIX - GUMAWA NG FOLDER BAGO MAG CHMOD ***
+RUN mkdir -p storage/framework/sessions \
+    storage/framework/views \
+    storage/framework/cache \
+    storage/framework/cache/data \
+    storage/logs \
+    bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache \
+    && php artisan config:clear \
+    && php artisan cache:clear
 
 # Render port
 ENV PORT=10000
-
 EXPOSE 10000
 
 # Start Apache using Render's port
