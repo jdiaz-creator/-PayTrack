@@ -109,3 +109,16 @@ Route::get('/session-test', function () {
         'session_secure' => config('session.secure'),
     ]);
 });
+
+Route::get('/csrf-debug', function (\Illuminate\Http\Request $request) {
+    return response()->json([
+        'session_driver' => config('session.driver'),
+        'session_id' => $request->session()->getId(),
+        'session_started' => $request->session()->isStarted(),
+        'session_cookie' => config('session.cookie'),
+        'session_secure' => config('session.secure'),
+        'session_domain' => config('session.domain'),
+        'request_secure' => $request->isSecure(),
+        'app_url' => config('app.url'),
+    ]);
+});
