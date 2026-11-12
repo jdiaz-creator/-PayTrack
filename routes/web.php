@@ -122,3 +122,17 @@ Route::get('/csrf-debug', function (\Illuminate\Http\Request $request) {
         'app_url' => config('app.url'),
     ]);
 });
+
+
+Route::get('/session-persist-test', function (\Illuminate\Http\Request $request) {
+    $previous = $request->session()->get('test_counter', 0);
+    $current = $previous + 1;
+
+    $request->session()->put('test_counter', $current);
+
+    return response()->json([
+        'previous' => $previous,
+        'current' => $current,
+        'session_id' => $request->session()->getId(),
+    ]);
+});
