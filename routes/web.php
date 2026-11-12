@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
+
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeeController;
@@ -25,21 +27,26 @@ Route::get('/login', [AuthController::class, 'showLogin'])
 Route::post('/login', [AuthController::class, 'login'])
     ->name('login.submit');
 
-// FORGOT PASSWORD (TEMPORARILY RETAINED)
+// FORGOT PASSWORD
 Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])
     ->name('password.request');
 
 Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])
     ->name('password.email');
 
-// RESET PASSWORD (TEMPORARILY RETAINED)
+// RESET PASSWORD
 Route::get('/reset-password/{token}', [AuthController::class, 'showResetPassword'])
     ->name('password.reset');
 
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])
     ->name('password.update');
 
-// AUTHENTICATED ROUTES
+/*
+|--------------------------------------------------------------------------
+| AUTHENTICATED ROUTES
+|--------------------------------------------------------------------------
+*/
+
 Route::middleware('auth')->group(function () {
 
     // ADMIN DASHBOARD
@@ -89,18 +96,18 @@ Route::middleware('auth')->group(function () {
 
 });
 
-
 /*
 |--------------------------------------------------------------------------
-| TEMPORARY SESSION DIAGNOSTIC
-| Remove after testing
+| TEMPORARY SESSION DIAGNOSTICS
+| Remove all diagnostic routes after troubleshooting.
 |--------------------------------------------------------------------------
 */
 
-Route::get('/session-test', function () {
-    $visits = session('diagnostic_visits', 0) + 1;
+// BASIC SESSION TEST
+Route::get('/session-test', function (Request $request) {
+    $visits = $request->session()->get('diagnostic_visits', 0) + 1;
 
-    session(['diagnostic_visits' => $visits]);
+    $request->session()->put('diagnostic_visits', $visits);
 
     return response()->json([
         'visits' => $visits,
@@ -110,10 +117,10 @@ Route::get('/session-test', function () {
     ]);
 });
 
-Route::get('/csrf-debug', function (\Illuminate\Http\Request $request) {
+// CSRF AND SESSION CONFIGURATION TEST
+Route::get('/csrf-debug', function (Request $request) {
     return response()->json([
         'session_driver' => config('session.driver'),
-        'session_id' => $request->session()->getId(),
         'session_started' => $request->session()->isStarted(),
         'session_cookie' => config('session.cookie'),
         'session_secure' => config('session.secure'),
@@ -123,8 +130,8 @@ Route::get('/csrf-debug', function (\Illuminate\Http\Request $request) {
     ]);
 });
 
-
-Route::get('/session-persist-test', function (\Illuminate\Http\Request $request) {
+// SESSION PERSISTENCE TEST
+Route::get('/session-persist-test', function (Request $request) {
     $previous = $request->session()->get('test_counter', 0);
     $current = $previous + 1;
 
@@ -134,5 +141,20 @@ Route::get('/session-persist-test', function (\Illuminate\Http\Request $request)
         'previous' => $previous,
         'current' => $current,
         'session_id' => $request->session()->getId(),
+    ]);
+});
+
+// HTTP HEADERS DIAGNOSTIC
+Route::get('/headers-debug', function (Request $request) {
+    $headersSent = headers_sent($file, $line);
+
+    return response()->json([
+        'headers_sent' => $headersSent,
+        'headers_sent_file' => $headersSent ? $file : null,
+        'headers_sent_line' => $headersSent ? $line : null,
+        'session_driver' => config('session.driver'),
+        'session_started' => $request->session()->isStarted(),
+        'session_secure' => config('session.secure'),
+        'request_secure' => $request->isSecure(),
     ]);
 });
