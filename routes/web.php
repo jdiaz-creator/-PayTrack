@@ -88,3 +88,24 @@ Route::middleware('auth')->group(function () {
         ->name('payrolls.markPaid');
 
 });
+
+
+/*
+|--------------------------------------------------------------------------
+| TEMPORARY SESSION DIAGNOSTIC
+| Remove after testing
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/session-test', function () {
+    $visits = session('diagnostic_visits', 0) + 1;
+
+    session(['diagnostic_visits' => $visits]);
+
+    return response()->json([
+        'visits' => $visits,
+        'session_driver' => config('session.driver'),
+        'session_cookie' => config('session.cookie'),
+        'session_secure' => config('session.secure'),
+    ]);
+});
